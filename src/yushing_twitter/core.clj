@@ -1,27 +1,27 @@
 (ns yushing-twitter.core
-  (:use [clojure.string :only (split join)]))
+  (:require [yushing-twitter.yushing :as yushing]
+            [twitter.api.restful :as twitter]
+            [twitter.oauth :as twitter-oauth]
+            [environ.core :refer [env]]))
 
-(def big-text
-  (slurp "resources/hpl.txt"))
+(def my-creds
+  (twitter-oauth/make-oauth-creds (env :app-consumer-key)
+                                  (env :app-consumer-secret)
+                                  (env :user-access-token)
+                                  (env :user-access-secret)))
 
-(def sentences
-  (re-seq #"[A-Za-z \']+[\.]" big-text))
+(defn gen-tweet []
+  (str (->> yushing/rand-poem
+            repeatedly
+            (filter #(-> % count (<= 117)))
+            first)
+       "\nhttp://yushing.herokuapp.com/"))
 
-(def sentence-db
-  (map (fn [sentence]
-         (rest (split (-> sentence
-                          .trim
-                          .toLowerCase)
-                      #"[\ .]+")))
-       sentences))
-
-(def short-sentence-db
-  (filter #(and (>= (count %) 3)
-                (<= (count %) 5))
-          sentence-db))
-
-(defn rand-poem []
-  (->> (shuffle short-sentence-db)
-       (take 4)
-       (map #(join " " %))
-       (join ", ")))
+(defn status-update []
+  (let [tweet (gen-tweet)]
+    (println "generated tweet is :" tweet)
+    (println "char count is:" (count tweet))
+    (when (not-empty tweet)
+      (try (twitter/statuses-update :oauth-creds my-creds
+                                    :params {:status tweet})
+           (catch Exception e (println "Oh no! " (.getMessage e)))))))
