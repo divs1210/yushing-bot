@@ -1,5 +1,6 @@
 (ns yushing-twitter.core
   (:require [yushing-twitter.yushing :as yushing]
+            [overtone.at-at :as overtone]
             [twitter.api.restful :as twitter]
             [twitter.oauth :as twitter-oauth]
             [environ.core :refer [env]]))
@@ -10,12 +11,13 @@
                                   (env :user-access-token)
                                   (env :user-access-secret)))
 
+(def my-pool (overtone/mk-pool))
+
 (defn gen-tweet []
-  (str (->> yushing/rand-poem
-            repeatedly
-            (filter #(-> % count (<= 117)))
-            first)
-       "\nhttp://yushing.herokuapp.com/"))
+  (->> yushing/rand-poem
+       repeatedly
+       (filter #(-> % count (<= 117)))
+       first))
 
 (defn status-update []
   (let [tweet (gen-tweet)]
@@ -25,3 +27,8 @@
       (try (twitter/statuses-update :oauth-creds my-creds
                                     :params {:status tweet})
            (catch Exception e (println "Oh no! " (.getMessage e)))))))
+
+(defn -main [& args]
+  ;; every hour
+  (println "Started up")
+  (overtone/every (* 1000 60 60 1) #(println (status-update)) my-pool))
