@@ -16,7 +16,7 @@
 (defn gen-tweet []
   (->> yushing/rand-poem
        repeatedly
-       (filter #(-> % count (<= 117)))
+       (filter #(-> % count (<= 140)))
        first))
 
 (defn status-update []
