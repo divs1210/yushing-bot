@@ -29,6 +29,6 @@
            (catch Exception e (println "Oh no! " (.getMessage e)))))))
 
 (defn -main [& args]
-  ;; every hour
+  ;; every 30 mins
   (println "Started up")
-  (overtone/every (* 1000 60 60 1) #(println (status-update)) my-pool))
+  (overtone/every (* 1000 60 60 0.5) #(println (status-update)) my-pool))
